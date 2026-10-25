@@ -67,3 +67,65 @@ bCont:{[x] (~(x<128))&(~(191<x))}
 / Layer 0 strings are byte sequences; this validator is the one
 / place a byte sequence earns the name string.
 butf8ok:{[b] :[0=#b; 1; :[b[0]<128; butf8ok[1 _ b]; :[b[0]<192; 0; :[b[0]<194; 0; :[b[0]<224; :[(#b)<2; 0; :[bCont[b[1]]; butf8ok[2 _ b]; 0]]; :[b[0]<240; :[(#b)<3; 0; :[bCont[b[1]]&bCont[b[2]]&:[b[0]=224; (~(b[1]<160))&(~(191<b[1])); :[b[0]=237; (~(b[1]<128))&(~(159<b[1])); 1]]; butf8ok[3 _ b]; 0]]; :[b[0]<245; :[(#b)<4; 0; :[bCont[b[1]]&bCont[b[2]]&bCont[b[3]]&:[b[0]=240; (~(b[1]<144))&(~(191<b[1])); :[b[0]=244; (~(b[1]<128))&(~(143<b[1])); 1]]; butf8ok[4 _ b]; 0]]; 0]]]]]]]}
+
+/ Layer 0 unification additions (branch unify-layer0). Grok's unique
+/ correct behaviors, added additively in Kona. The build's frame
+/ (magic/version/type/u32 length/Adler) is UNCHANGED, so Layers 1-7
+/ keep passing. New decoders return (1;value;rest) on success and
+/ (0;reason;!0) on failure, mirroring bDecStr's triple shape. New
+/ encoders return (1;bytes;!0) on success and (0;reason;!0) on
+/ failure, mirroring Grok's (`ok/`err) results in build style.
+/ Float specials use the Layer 1 lessons, inlined here because l00
+/ loads before l01 and cannot call kFIsNan: NaN is the only value
+/ less than -Inf; infinities are detected by x-x being NaN.
+/ Kona float model, verified by execution: Kona holds -0.0 for
+/ display but no predicate distinguishes it from +0.0, and division
+/ by either zero gives +Inf, so the encoder maps both zeros to
+/ +0.0 bytes; the decoder returns the -0.0 literal for sign 1.
+/ Kona float literals can exceed binary64 range (the max-double
+/ decimal parses to 2^1024), so the encoder rounds to nearest even
+/ (IEEE default) instead of Grok's floor, which is exact only for
+/ binary64 inputs: for a Kona float with extra mantissa bits,
+/ floor would be 1 ulp low (verified: the 0.1 literal). Inputs
+/ beyond binary64 range encode to infinities (IEEE overflow);
+/ inputs too small for subnormals encode to signed zero (IEEE
+/ underflow). CRC-32 is byte-recursive (test-scale inputs); large
+/ inputs must be checksummed in chunks, the same rule as bCksum.
+bFNEGI:-(1.0%0.0)
+bFPOSI:(1.0%0.0)
+bF64MANT:4503599627370496.0
+bF64MINN:2.0^-1022
+bF64I52:2.0^-52
+bFIsNan:{[x] x<bFNEGI}
+bFIsPosInf:{[x] (~bFIsNan[x])&(x>0)&bFIsNan[x-x]}
+bFIsNegInf:{[x] (~bFIsNan[x])&(x<0)&bFIsNan[x-x]}
+bF64Step:{[p] a:p[0]; e:p[1]; :[~((a-2)<0); (a%2;e+1); :[((a-1)<0)&(e>-1022); (a*2;e-1); p]]}
+bF64Pack:{[sign;exp;mant] ((sign*128)+(exp%16);(bMod[exp;16]*16)+(mant%281474976710656);bMod[mant%1099511627776;256];bMod[mant%4294967296;256];bMod[mant%16777216;256];bMod[mant%65536;256];bMod[mant%256;256];bMod[mant;256])}
+bF64RNE:{[p] m0:_(p); f:p-m0; d:f-0.5; :[(d<0); m0; :[0=d; :[0=bMod[m0;2]; m0; m0+1]; m0+1]]}
+bEncF64N:{[sign;af;e] mant:bF64RNE[(af-1)*bF64MANT]; exp:e+1023; :[~(exp<2047); (1;:[sign=1;255 240 0 0 0 0 0 0;127 240 0 0 0 0 0 0];!0); :[mant=4503599627370496; :[exp=2046; (1;:[sign=1;255 240 0 0 0 0 0 0;127 240 0 0 0 0 0 0];!0); (1;bF64Pack[sign;exp+1;0];!0)]; (1;bF64Pack[sign;exp;mant];!0)]]}
+bEncF64S:{[sign;af] mant:bF64RNE[af*bF64MANT]; :[mant=4503599627370496; (1;bF64Pack[sign;1;0];!0); (1;bF64Pack[sign;0;mant];!0)]}
+bEncF64Fin:{[x] sign:((x<0)|((1.0%x)<0)); a:x*(1-2*sign); st:bF64Step/[1100;(a;0)]; af:st[0]; e:st[1]; :[~((af-2)<0); (1;:[sign=1;255 240 0 0 0 0 0 0;127 240 0 0 0 0 0 0];!0); :[~((af-1)<0); bEncF64N[sign;af;e]; bEncF64S[sign;af]]]}
+bEncF64:{[x] :[~(2=4:x); (0;"type";!0); :[bFIsNan[x]; (1;127 248 0 0 0 0 0 0;!0); :[bFIsPosInf[x]; (1;127 240 0 0 0 0 0 0;!0); :[bFIsNegInf[x]; (1;255 240 0 0 0 0 0 0;!0); :[x=0; (1;0 0 0 0 0 0 0 0;!0); bEncF64Fin[x]]]]]]}
+bDecF64Sub:{[mant] ((mant*1.0)*bF64I52)*bF64MINN}
+bDecF64Norm:{[exp;mant] (1.0+((mant*1.0)*bF64I52))*(2.0^(exp-1023))}
+bDecF64Val:{[sign;exp;mant] :[exp=2047; :[mant=0; :[sign=1;bFNEGI;bFPOSI]; 0.0%0.0]; :[exp=0; :[mant=0; :[sign=1;-0.0;0.0]; :[sign=1;-bDecF64Sub[mant];bDecF64Sub[mant]]]; :[sign=1;-bDecF64Norm[exp;mant];bDecF64Norm[exp;mant]]]]}
+bDecF64B:{[b] sign:b[0]%128; exp:(bMod[b[0];128]*16)+(b[1]%16); mant:(bMod[b[1];16]*281474976710656)+(b[2]*1099511627776)+(b[3]*4294967296)+(b[4]*16777216)+(b[5]*65536)+(b[6]*256)+b[7]; (1;bDecF64Val[sign;exp;mant];8 _ b)}
+bDecF64:{[b] :[(#b)<8; (0;"short";!0); bDecF64B[b]]}
+bLEBLoop:{[v] :[v<128; ,v; (bMod[v;128]+128),bLEBLoop[v%128]]}
+bEncLEB:{[v] :[~(1=4:v); (0;"type";!0); :[v<0; (0;"range";!0); (1;bLEBLoop[v];!0)]]}
+bLEBWalk:{[b;i;acc;pow] :[~((#b)>i); (0;"truncated";!0); bLEBWalkL[b;i;acc;pow]]}
+bLEBWalkL:{[b;i;acc;pow] :[i>8; (0;"limit";!0); bLEBWalkB[b;i;acc;pow]]}
+bLEBWalkB:{[b;i;acc;pow] by:b[i]; :[by>127; bLEBWalk[b;i+1;acc+(by-128)*pow;pow*128]; (1;acc+by*pow;(i+1) _ b)]}
+bDecLEB:{[b] r:bLEBWalk[b;0;0;1]; k:(#b)-#r[2]; e:bEncLEB[r[1]][1]; :[0=r[0]; r; :[k~#e; :[(k#b)~e; r; (0;"canonical";!0)]; (0;"canonical";!0)]]}
+bEncOpt:{[p] :[~((0=p[0])|(1=p[0])); (0;"tag";!0); :[0=p[0]; (1;,0;!0); :[bValid[p[1]]; (1;1,bEncStr[p[1]];!0); (0;"type";!0)]]]}
+bDecOptP:{[r] n:bStrLen[r]; :[(#r)<4; (0;"short";!0); :[(#r)<4+n; (0;"length";!0); (1;(1;n#4 _ r);(4+n) _ r)]]}
+bDecOpt:{[b] :[(#b)<1; (0;"short";!0); :[b[0]=0; (1;(0;!0);1 _ b); :[b[0]=1; bDecOptP[1 _ b]; (0;"null";!0)]]]}
+bPop:{[a] :[a=0; 0; bMod[a;2]+bPop[a%2]]}
+bIsPow2:{[a] (1=4:a)&(a>0)&(a<65536)&(1=bPop[a])}
+bAlignPad:{[a;b] :[~bIsPow2[a]; (0;"align";!0); :[~bValid[b]; (0;"type";!0); (1;b,(bMod[a-bMod[#b;a];a]#0);!0)]]}
+bXorR:{[a;b;pow;acc] ba:bMod[a;2]; bb:bMod[b;2]; :[pow>2147483648; acc; bXorR[a%2;b%2;pow*2;acc+(ba+bb-2*ba*bb)*pow]]}
+bXor32:{[a;b] bXorR[a;b;1;0]}
+bCrcRounds:{[c;n] :[n=0; c; :[1=bMod[c;2]; bCrcRounds[bXor32[c%2;3988292384];n-1]; bCrcRounds[c%2;n-1]]]}
+bCrcStep:{[c;by] bCrcRounds[bXor32[c;by];8]}
+bCrcRec:{[b;c] :[0=#b; bXor32[c;4294967295]; bCrcRec[1 _ b; bCrcStep[c;b[0]]]]}
+bCRC32:{[b] bCrcRec[b;4294967295]}

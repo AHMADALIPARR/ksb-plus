@@ -39,3 +39,125 @@ Gates A (l00-l03) and B (l04-l05) are met by execution as of
 2026-10-25 (t08 78/78); Gate D (l08-l09) is still unclaimed
 pending Layer 9. No later gate is claimed passing until its
 tests pass.
+
+## Layer 0 unification (branch unify-layer0, base a62b15a)
+
+Two Layer 0 implementations, one spec where they agree, correctness
+where they disagree. (A) the build's src/l00.k (Kona K3/K4). (B)
+Grok's src/binary.k + t/t_binary.k, verbatim from
+AHMADALIPARR/swift-tiger-comet-otter 5cc97f7 (ngn/k growler fork).
+The build's frame (magic KSB+, version byte 1, type byte, u32be
+length, Adler checksum) is UNCHANGED, so Layers 1-8 keep passing.
+Added additively to src/l00.k: true IEEE-754 binary64 encode/decode
+(bEncF64/bDecF64 + bF64* helpers, round-to-nearest-even),
+LEB128 codec (bEncLEB/bDecLEB, canonical check by re-encode,
+10th byte -> limit), option tags (bEncOpt/bDecOpt: 0 = missing,
+1 + length-prefixed bytes = present), alignment padding
+(bIsPow2/bAlignPad: powers of two below 65536, 00 padding),
+CRC-32 (bCRC32, reflected, init/xor-out U32MAX) as an additional
+checksum, NOT a frame replacement. New encoders return
+(1;bytes;!0)/(0;reason;!0); new decoders return
+(1;value;rest)/(0;reason;!0); all take byte lists (atoms are
+caller error, same as the existing decoders: bDecLEB[128] as an
+atom rank-errors, bDecLEB[,128] correctly gives truncated).
+
+Runtime that ran (B): ngn/k growler fork, cloned from Codeberg and
+built with `make k CC=gcc` (binary ~/workspace/.tools/growler-k/k,
+378912 bytes, built 2026-10-25); sanity 1+1 -> 2. (B) under Kona
+was attempted first and fails immediately (ngn/k `$[`
+conditionals, backtick symbols, 0x literals, 2\ / 2/ bit ops,
+::), as expected for a different dialect.
+
+(B) EXECUTION FINDING (host drift, not algorithm error): (B)
+as-shipped does NOT run on current growler master. Two dialect
+forms Grok used no longer behave as written: (1) multi-line
+`$[...]` conds return :: for non-first branches (u8enc 255 -> ::,
+u8enc 256 -> ::, while an identical single-line copy returns
+(`ok;,0xff) / (`err;"range"); the same multi-line shape defined
+fresh in a probe also gives ::, so it is the form, not the file);
+(2) fold-with-seed `{x,y}/[seed;list]` rank-errors (bitscat and
+joinb, hence beenc/beU; inlined pieces give the correct
+0x01020304). Cascades explain the suite failures: u32enc -> ::
+makes u32dec see :: and report "type"; u64enc[0;0] returns the
+garbage (`ok;1 1). utf8ok and crc32 error outright (their
+fold/apply forms). What DOES execute: optlpenc-null -> ok + zero
+byte; primitives (fitpos, bits64, nor, isC, casts, 2\, 2/,
+take); single-line restatements of the broken algorithms (probes
+only, never shipped, never modifying (B)). Verdicts below rest on
+(B)'s test expectations + docs + these executed pieces, and on
+the unified Kona port passing 110 checks — not on (B)'s suite
+passing under current master, which it does not.
+
+Agree/disagree (A-executed under Kona vs B-intended; winner by
+correctness, not authority): fixed-width ints AGREE (u8/u16/u32
+BE, i8/i16/i32 two's complement, u64 (hi;lo) pairs; u32 16909060
+-> 1 2 3 4, i8 -128 -> 128, u64 (1;2) -> 8 bytes both sides).
+u32be length prefixes AGREE (same shape both sides). UTF-8
+validation AGREES on every class (valid 1-4 byte incl. max
+U+10FFFF; overlong incl. 192/193 leads and E0/F0 low second
+bytes; surrogates via ED; F5+; lone continuation; truncated;
+bad continuation). f64 AGREES on all binary64 inputs (0.0, 1.0,
+-1.0, 2.5, 0.1 -> 3FB999999999999A, 1e10, 2.5e-10, min-normal
+0010..., max 7FEF..., smallest subnormal ...01, +Inf 7FF0...,
+-Inf FFF0..., NaN 7FF8..., round-trips incl. subnormals and
+max); Grok's floor rounding is exact for binary64 inputs, and
+the Kona port correctly uses round-to-nearest-even, which
+subsumes it (0.1 encodes ...99A, not floor ...999). LEB128
+AGREES (0 -> 0, 127 -> 127, 128 -> 128 1, 300 -> 172 2, 16384 ->
+128 128 1, 2^63-1 -> 255x8 127; non-minimal 128 0 -> canonical,
+truncated -> truncated, 10-byte input -> limit). Option tags
+AGREE (missing -> 0, present "AB" -> 1 0 0 0 2 65 66, tag 2 ->
+null, truncated present -> short/length). Alignment AGREES
+(pad 5 bytes at 8 -> 8 bytes, 8 at 8 unchanged, 6 at 4 -> 8,
+1 unchanged, 3 -> align, 0 -> align, 16 empty -> empty);
+Grok's `m:a!#b` is (#b) mod a in ngn/k (divisor on the left),
+so his formula pads to the next multiple, not to 10 — the
+earlier 10-byte worry is resolved by reading his code and his
+own test (2 bytes at 4 -> 4 bytes). CRC-32 AGREES on all five
+vectors (empty -> 0, "a" -> 3904355907, "123456789" ->
+3421780262, "abc" -> 891568578, "ABC" -> 2743272264).
+Envelope layouts DIFFER BY DESIGN, not by correctness: (B)
+uses a 20-byte header (u16 version/header/flags/reserved, u32
+length, u32 CRC-32); the build's frame is kept per the brief
+because Layers 1-8 depend on it. (B)'s strenc validates UTF-8
+before length-prefixing while (A)'s bEncStr is a raw byte codec;
+different layering, not a conflict — (A)'s layering is kept.
+NOT adopted, per brief scope or host-specificity: bool
+codec (B-only, not in the additive list), checked arithmetic
+uadd/ushl (helpers, not in the list), the `I64MIN symbol hack
+for the 0x8000... pattern (ngn/k 0N limitation; Kona i64 is an
+ordinary value and Layer 1 covers i64), (B)'s f64dec host `fb
+endianness probe (unified decode is pure arithmetic and
+host-independent), (B)'s f64 "float" error for out-of-range
+inputs (unreachable for binary64 inputs; unified maps them to
+infinities per IEEE overflow). (B)'s LEB 2^63 cap is vacuous
+for Kona ints (max int IS 2^63-1), so unified matches (B) on
+every expressible input.
+
+Corrections recorded 2026-10-25 (supersede earlier figures):
+the literal 1.7976931348623157e308 IS max double (7FEF...),
+not 2^1024 — the earlier 2^1024 reading was an artifact of
+Kona's float `<` dead zone plus lossy printing; and
+CRC-32("ABC") = 2743272264 (0xA3830348), not 2743272008.
+
+Honest limits of the unified port: Kona cannot distinguish
+-0.0 from +0.0 on encode (1.0%-0.0 reads +Inf; no predicate
+separates them), so bEncF64 maps both zeros to +0.0 bytes,
+while bDecF64 DOES return the -0.0 literal for 8000... and
+round-trips it through the decoder; this matches Layer 1's
+standing note and is a host limitation, not a spec choice.
+bCRC32 is byte-recursive (test-scale inputs; large inputs
+must be chunked, same rule as bCksum). bDecF64/bDecOpt/
+bDecLEB are monadic (whole remaining list in, rest out),
+unlike (B)'s offset-taking decoders — same information,
+Kona-idiomatic shape.
+
+Evidence 2026-10-25: tests/t00.k extended 41 -> 110 checks
+(69 new: f64 encode 13, f64 decode/round-trip 18, LEB 14,
+option 10, alignment 10, CRC 4); direct t00 run 110 PASS, 0
+FAIL, "ALL PASS"; run-tests.sh on branch unify-layer0 passes
+t00-t08 (t00 110/110, t01 152/152, t02 162/162, t03 81/81,
+t04 61/61, t05 66/66, t06 105/105, t07 84/84, t08 78/78).
+No stubs/TODO/FIXME/pass in shipped code. Nothing merged to
+main, nothing pushed.
+
