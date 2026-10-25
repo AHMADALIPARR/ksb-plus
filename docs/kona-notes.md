@@ -145,6 +145,34 @@ and Kona hangs or misparses.
   each fix moved the first error forward until the run was
   clean.
 
+## Layer 5: file verbs, nested reads, empty each
+
+- Kona's `1:` monadic read of a nested structure is
+  unreliable, deterministically: a single-element general list
+  holding a 1000-int vector segfaulted Kona 3/3 on whole-object
+  match after a write/read round trip, and the same shape with
+  a 4096-int vector matched 0 despite identical sampled bytes,
+  while the same object matched 1 in memory and a two-element
+  list matched 1. Flat int lists round-trip exactly (verified:
+  an 8192-byte two-page flat list split back into two valid
+  pages). Consequence: persist flat byte lists only, never
+  lists of pages, and never verify persistence with a
+  whole-store match; verify per page instead.
+- `1:` dyadic (`path 1: data`) truncates and rewrites the whole
+  file; `5:` dyadic appends to an existing file. A save that
+  must replace therefore uses `1:`, never `5:`.
+- Kona appends ".K" to a file path unless the path already ends
+  in ".K" (tried first on read, used directly on write). Save
+  and load must use the same path value.
+- Loading a missing file is a Kona-level DOE error that derails
+  the session into the continuation flood. Never test it inside
+  a suite; make it a caller-error contract instead.
+- Each over an empty index list yields a general empty list
+  (type 0), not `!0`. An empty result's type therefore depends
+  on how it was built; compare empties by count, or normalize
+  (Layer 5's `sLoadS` normalizes an empty split to `!0` so an
+  empty loaded store equals `sNew` exactly).
+
 ## Representation facts
 
 - Kona ints are signed 64-bit. There is no unsigned 64-bit atom, so
