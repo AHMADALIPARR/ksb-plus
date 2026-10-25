@@ -491,3 +491,33 @@ and Kona hangs or misparses.
   fails for that reason, not for a parser reason; keep
   join fixtures free of shared non-key names, and cover
   the duplicate case separately (it passes with "key").
+- Juxtaposition builds a list ONLY for literals. Probed
+  2026-10-25 in bare Kona: `1 2` works, but `1 a`, `a b`,
+  and `100 kIMAX` (a bare name as a juxtaposed element)
+  all rank-error, and `1 2 kIMAX` gives an index error.
+  Never juxtapose a bare name; use commas (`a,b`),
+  explicit parens (`(a;b)`), or join (`100,kIMAX`).
+  This refines the Layer 1 note ("variable juxtaposition
+  is application not a list"): the observed failure is a
+  rank error, not a list.
+- `#'` (each-count) is broken in this Kona: probed
+  2026-10-25, #'((1 2);(3 4 5)) gives "valence error",
+  and so does the parenthesized form (#'). Use a named
+  count helper with each instead: yCnt:{[x] #x} then
+  yCnt'xs. This is the same named-function-with-each
+  pattern the codebase already uses for lambdas.
+- Kona's PRINTER renders LONG_MAX as 0I and LONG_MIN as
+  0N, but the VALUES are correct two's-complement
+  integers (probed 2026-10-25: kChkAdd[5;7] is (1;12)
+  with kIMAX in scope, and kChkAdd[IMAX;1] overflows
+  correctly). Never judge an extreme int by its print;
+  judge it by arithmetic behavior.
+- After an error, probing the failed name is
+  untrustworthy: a post-error `4:bt` printed type 6
+  (the error value) instead of anything about the
+  binding. Fix the error first, then re-probe clean.
+- Assignment echoes are inconsistent and harmless:
+  a qSplitTable result assignment echoes its value,
+  while plain and qWrite assignments do not (Layer 10
+  note records the same). The runner only checks for
+  FAIL / error / ALL PASS lines, so echoes are noise.
