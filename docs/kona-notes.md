@@ -268,3 +268,50 @@ and Kona hangs or misparses.
   them one argument and fails with "unmatched". A (0;"short")
   from cDecode almost always means the test's own construction
   failed upstream and cEncode never produced a frame.
+- Each does NOT broadcast a list second argument: qReadChunk'[ads;st]
+  zips addresses with store pages element-wise instead of pairing
+  every address with the whole store. Replicate first, as Layer 6
+  does for the store and for tables/rowid lists:
+  qReadChunk'[ads;(#ads)#(,st)]. Atoms replicate by take directly
+  ((#gs)#nm with nm a symbol atom is correct); only LISTS need
+  enlisting before take. The same trap in the other direction:
+  (#cols)#ix with ix a list takes the first #cols rowids, while
+  (#cols)#(,ix) replicates the whole rowid list #cols times.
+- Assignment inside a function to a global name does NOT touch the
+  global: the name becomes a function local, so the right-hand side
+  reads an uninitialized local and errors (type error). This broke
+  the shared test harness chk the first time any check failed: the
+  FAIL branch (F:F+1, whether as a :[...] branch or a top-level
+  statement) had never executed in t00-t05 because every check
+  passed. Counters updated from inside functions must use indexed
+  assignment on a global container, which modifies in place:
+  FC:(,0) at top level, FC[0]:FC[0]+(~m) inside chk, and the final
+  line reads FC[0]. The t00-t05 chk definitions still carry the
+  latent form; they are green and untouched, but any future failing
+  check there will flood instead of printing FAIL.
+- &/ and |/ (min-over / max-over) type-error on char lists. Char
+  min/max go through grade, which works on chars: min is
+  col[(<col)[0]], max is col[(<col)[(#col)-1]], guarded by an
+  empty check first (indexing an empty grade errors). Int/float
+  min/max still use Layer 1 kMin/kMax.
+- A (1;single-value) expectation collapses when the value is a
+  scalar: (1;2) is an int list [1,2], not the pair (1;[2]), so a
+  chk comparing a (1;rowid-list) result against (1;2) shape-errors
+  instead of printing FAIL. Single-element (ok;list) expectations
+  must enlist: (1;,2). Multi-element lists are already lists, so
+  (1;1 4) is safe.
+- Unwrapping a (1;(a;b)) result: the store is [1][0] and the second
+  value is [1][1]. Indexing [1]/[2] on the outer pair is wrong:
+  [1] is the inner pair, [2] does not exist (index error). The
+  Layer 6 qWriteC bug was exactly this.
+- 0#(,1) is a TYPED int empty, not a general empty: enlist preserves
+  the atom's type, and take preserves the list's type. A genuine
+  general empty (type 0) comes from each over an empty index list:
+  {[x] x}'[!0]. Layer 2 accepts a general-empty table column as
+  valid, so this distinction matters when testing untyped columns.
+- Iteration practice, learned the hard way: a session derailed by
+  an error floods continuation prompts until the timeout kills it,
+  and one 120s flood wrote 2.3GB. When iterating on a failing test,
+  cap Kona's output (pipe through head -c) so a flood cannot eat
+  the disk; a clean run is a few KB and exits promptly, so the cap
+  never truncates a passing run.
