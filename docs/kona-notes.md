@@ -121,6 +121,30 @@ and Kona hangs or misparses.
   with a nearby type error means the shapes differed: fix the
   expectation (or the code) so both sides have the same shape.
 
+## Layer 4: test traps that are not engine bugs
+
+- `%` is division, not modulo (already stated above), and the
+  failure mode in tests is silent: `(b+1)%256` does NOT increment
+  a byte modulo 256, it divides by 256 and usually yields 0.
+  Byte increments in tests must use `bMod[b+1;256]`. A test that
+  "corrupts" a byte with `%256` may leave the byte unchanged
+  (when the byte was already 0) or zero it (when it was not),
+  and either way the corruption test passes or fails for the
+  wrong reason. The Layer 4 corrupt tests originally used `%256`
+  and were fixed to `bMod`.
+- A frame's tag byte occupies the frame's type-byte slot; it is
+  not extra. A string of N chars frames to N+18 bytes (14 bytes
+  of frame overhead plus a 4-byte length prefix plus N payload
+  bytes), not N+19. The Layer 4 fit tests originally miscounted
+  by one and were fixed.
+- When a run floods with `>` prompts, only the FIRST type error
+  is real; everything after it is cascade. Find the first error,
+  fix that line, and rerun. In Layer 4 the cascade repeatedly
+  pointed at lines after the true failure (a wrong limit
+  comparison in pAppendB, then wrong test expectations), and
+  each fix moved the first error forward until the run was
+  clean.
+
 ## Representation facts
 
 - Kona ints are signed 64-bit. There is no unsigned 64-bit atom, so
