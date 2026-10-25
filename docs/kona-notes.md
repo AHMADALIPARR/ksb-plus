@@ -521,3 +521,16 @@ and Kona hangs or misparses.
   while plain and qWrite assignments do not (Layer 10
   note records the same). The runner only checks for
   FAIL / error / ALL PASS lines, so echoes are noise.
+- oCol returns (1;col): indexing the WRAPPER gives the
+  tag, not the column. Probed 2026-10-25: Layer 15's
+  nRateAllowC passed ls[ix] where ls was the oCol
+  result, so the "last" timestamp was always 1 (the
+  tag) and every refill computed from ts-1. Always
+  unwrap [1] first: ls[1][ix]. Same class as the
+  Layer 6 qWriteC unwrapping bug.
+- A list of 1-char quoted literals collapses to a char
+  list (Layer 2 note: 1-char literals are char atoms).
+  Probed 2026-10-25: ("x";"y") has type -3, not 0, so
+  a list of single-char passwords is one char list,
+  not a list of passwords. Use multi-char literals
+  in fixtures that must be lists of strings.
