@@ -163,8 +163,12 @@ kFxCmp:{[a;b] kCmp[a;b]}
 kFNEGI:-(1.0%0.0)
 kFPOSI:(1.0%0.0)
 kFIsNan:{[x] x<kFNEGI}
-kFIsPosInf:{[x] (~kFIsNan[x])&(x=2*x)&(x>0)}
-kFIsNegInf:{[x] (~kFIsNan[x])&(x=2*x)&(x<0)}
+/ Inf test via x-x (NaN only for infinities): Kona's = and <
+/ both miscompare max double against +Inf (max=Inf reads 1,
+/ max<Inf reads 0), so the old x=2*x test classified max double
+/ as +Inf. Fixed 2026-10-25 during Layer 3 (t01 re-run clean).
+kFIsPosInf:{[x] (~kFIsNan[x])&(x>0)&kFIsNan[x-x]}
+kFIsNegInf:{[x] (~kFIsNan[x])&(x<0)&kFIsNan[x-x]}
 kFClass:{[x] :[kFIsNan[x]; 0; :[kFIsPosInf[x]; 1; :[kFIsNegInf[x]; 2; :[x=0; 3; 4]]]]}
 kFSign:{[x] :[kFIsNan[x]; 0; :[x<0; -1; :[x>0; 1; 0]]]}
 

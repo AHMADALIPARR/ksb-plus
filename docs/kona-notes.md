@@ -131,3 +131,88 @@ and Kona hangs or misparses.
   page format. Raw-byte files with no container header are not
   available through Kona's verbs; this is a documented limitation,
   not something to pretend around.
+
+## Layer 3: recursion, folds, empty typing, float extremes
+
+- Direct self-recursion is safe (nest, wrapn, the Layer 3
+  encoder cE, the Layer 3 decoder loop cDL). Mutual recursion
+  is broken in Kona, proven by single-purpose miniatures
+  (2026-10-25): (1) mutual frames leak locals, so an inner
+  invocation overwrites outer locals and parameters; (2) a
+  dyadic verb evaluated after a recursive call returns
+  mis-evaluates as a projection (right operand kept, left
+  dropped); (3) a :[...] branch call that transitively repeats
+  its own function through another function returns void, even
+  through a pass-through helper (mini-bm, mini-bp both silent);
+  (4) assigning a :[...] result to a variable yields void
+  (r:[...] is not a value); (5) over with a lambda leaks under
+  nesting, while each calling the SAME function preserves
+  locals (each through a different named function voids);
+  (6) lambdas do not capture outer locals: pass every value a
+  lambda needs as a lambda parameter. Design consequence: the
+  encoder is one function with inline branches plus each
+  (same function) plus non-repeating assembly helpers; the
+  decoder is one directly-recursive loop over an explicit
+  frame stack, with leaf helpers only. Never read a pre-call
+  local after a recursive call in a repeating frame, and never
+  put a mutually-repeating call as a :[...] branch value.
+- Over (/) folds per element only over a FLAT list whose first
+  element is the seed: f/((,seed),items). The pair form
+  f/((seed;items)) applies f once with the whole items list as
+  the second argument (cDecInts silently decoded one element
+  this way); the enlisted-pair form f/((,seed;items)) hands the
+  step a wrongly-shaped accumulator (index/type errors). The
+  Layer 3 sequence decoders use the concat form.
+- Empty-collection typing is a literal fact with decode
+  consequences: a fold seed of !0 is an INT list, so a decoded
+  empty float vector came out typed as an int list and failed
+  the Layer 2 validator. The float sequence decoder seeds with
+  0#1.0 2.0 (an empty float list) so empty float vectors keep
+  float type through decode. The same care applies anywhere a
+  decoded empty collection must keep its declared type.
+- Length-prefixed strings decode to CHAR lists: the decoder's
+  string reader applies _ci to the taken bytes. Without it, a
+  decoded string is an int list and symbol interning ($ on it)
+  fails with a type error. The encoder-section copy of the
+  string reader already used _ci; the decoder-section copy did
+  not, and the two definitions shadowed each other (the later
+  one wins). Shadowed reader definitions were deleted so each
+  reader has exactly one definition.
+- Float = and < miscompare at the extremes: max double compares
+  EQUAL to +Inf (max=Inf reads 1, max<Inf reads 0), while
+  ordinary magnitudes compare correctly. The Layer 1 infinity
+  test x=2*x therefore classified max double as +Inf, and
+  Layer 3 encoded it as +Inf (silent corruption). Fixed by
+  testing x-x for NaN (NaN only for infinities, since finite
+  x-x is 0.0): kFIsPosInf is (~NaN)&(x>0)&NaN(x-x), and
+  likewise for -Inf. After the fix, max double encodes as
+  finite, its 7-digit decimal fails the round-trip check, and
+  encoding refuses it with (0;"float") as designed.
+- Kona's $ prints floats with about 7 significant digits, so
+  Layer 3 float encoding VERIFIES the round trip and refuses
+  lossy values (max float, 1/3, subnormals) with (0;"float")
+  instead of storing them corrupted. Ordinary short decimals
+  (1.5, 0.1, 1e10, 2.5e-10) round-trip.
+- Kona has no char-minus-int arithmetic: digit values for the
+  decimal float parser come from ? on "0123456789".
+- bFrame takes TWO arguments (type byte plus payload) and
+  bUnframe returns a TRIPLE (ok;type;payload) or
+  (0;reason;!0). Layer 3 returns pairs, mapping the triple.
+  Nested values carry an inline tag byte plus payload, not a
+  per-object frame; the outer frame's checksum covers all
+  nested bytes.
+- A misplaced ] inside a long :[...] chain can balance globally
+  while mis-nesting locally (the Layer 3 txn branch lost its
+  false branch this way: len had 4 parts, txn had 2, and only
+  txn decode failed). When one kind fails while siblings pass,
+  parse the suspect function into a :[...] tree and check part
+  counts per conditional instead of trusting total balance.
+- Test-literal traps that recurred through Layer 3: constructors
+  taking multiple arguments must be called with semicolons
+  (oDict[ks;vs], oTxn[id;ops;st], oTable[names;cols]), never a
+  single pair; single-element collections must be enlisted
+  (oIntVec[,3], vs as ,(object)); a pair in parens is grouping,
+  not enlist; an extra paren pair around two arguments makes
+  them one argument and fails with "unmatched". A (0;"short")
+  from cDecode almost always means the test's own construction
+  failed upstream and cEncode never produced a frame.
