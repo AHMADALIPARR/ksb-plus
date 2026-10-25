@@ -173,6 +173,50 @@ and Kona hangs or misparses.
   (Layer 5's `sLoadS` normalizes an empty split to `!0` so an
   empty loaded store equals `sNew` exactly).
 
+## Layer 8: 5: appends, msync, and the wScan shape
+
+- `5:` dyadic appends bytes to a flat-list file: probed
+  2026-10-25, a file written with `1:` holding 65 66 67, then
+  `"pw" 5: 68 69`, reads back with `1:` as 65 66 67 68 69. It
+  creates a missing file (append to a new path reads back the
+  appended bytes), and appending `!0` is a no-op on an existing
+  file (it does NOT truncate). A test that appends to a file
+  must therefore reset it first (a `1:` rewrite of the empty
+  list) or reruns append behind the previous run's bytes and
+  fail on sequence numbers; Layer 8's append-flow test does
+  exactly this reset.
+- Durability grounding, from Kona's source (`src/0.c`, read
+  2026-10-25): `5:` dyadic calls `_5d_(x,y,1)` -- dosync 1 --
+  and msyncs `MS_SYNC|MS_INVALIDATE` after the append,
+  including on first creation (a missing file falls back to
+  `_1d_write` with dosync 1). The `1:` dyadic write path calls
+  `_1d_write` with dosync 0 and does not msync. So `5:`
+  appends are Kona's synced path and `1:` rewrites are not;
+  Layer 8's durability boundary rests on this, not on a claim
+  about the filesystem. Kona's source also carries a TODO
+  wondering whether a variable holding an earlier `1:` map
+  sees a later `5:` append -- so never reuse a loaded value
+  across an append; always load again.
+- The wScan shape that survives Kona's mutual-recursion traps:
+  ONE function, directly self-recursive as the final branch
+  value, with the per-frame decoder as a leaf helper computed
+  up front. The decoder's inputs (frame bytes, parsed triple)
+  are computed as top-level locals before the conditional
+  chain and read only as branch conditions and recursive-call
+  arguments, never after a recursive call. Computing the
+  parsed triple up front is safe because `bUnframe` on short
+  or torn input returns a failure triple whose reason string
+  can never equal the expected type byte, so the decoder
+  fails fast without indexing missing fields. Do NOT route
+  the recursive call through a helper: a branch call that
+  repeats its own function through another function voids,
+  even through a pass-through.
+- Take precedence, same family as `#x=y`: `(#b)-5#b` parses
+  as count minus take (an int minus a list, broadcasting),
+  not as (count-5) take. Parenthesize the count before take:
+  `((#b)-5)#b`. The Layer 8 torn-tail probe first failed
+  for exactly this reason, not an engine reason.
+
 ## Representation facts
 
 - Kona ints are signed 64-bit. There is no unsigned 64-bit atom, so
