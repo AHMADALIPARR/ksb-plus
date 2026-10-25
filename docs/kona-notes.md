@@ -396,3 +396,32 @@ and Kona hangs or misparses.
   tBeginV/tBeginW nested; tEntryOkV nested). The same hazard
   applies to = between incompatible types; nest that too
   rather than assuming = returns 0 across types.
+- Mixed-operator arithmetic groups right-to-left, and the
+  grouping is NOT always the intended one. Probed 2026-10-25:
+  2*3+2 is 10 (2*(3+2)), so a diagonal index written i*n+i
+  computes i*(n+i) and is wrong; it must be (i*n)+i. By
+  contrast, j+c*!r and p-ctx[3]*i are correct as written,
+  because right-to-left grouping matches intent there
+  (j+(c*(!r)) and p-(ctx[3]*i)). The safe rule: parenthesize
+  any mixed-operator chain whose intended grouping is not
+  the rightmost-first one.
+- Monadic ! applies to the whole product to its right: probed
+  2026-10-25, !3*3 is 0..8 (i.e. !(3*3)), not (0 3 6). So
+  !n*n is a correct 0..n*n-1 range, while i*n+i (above) is
+  not a correct diagonal index. Probe, do not assume, when
+  the two forms look alike.
+- Kona ~ distinguishes float from int: an expected float cell
+  written as an int (11 instead of 11.0) fails the match even
+  though the values print the same. Float test expectations
+  must carry .0 decimals. Related display trap: a tagged
+  pair (1;5) prints as "1 5" (an int list) — same value,
+  display only.
+- Multi-list each is unproven beyond 2 lists in this codebase
+  (all production eaches use 1 or 2 lists). Layer 11 packs
+  extra context into a single ctx tuple and replicates it
+  ((#ps)#(,ctx)) so every each stays at 2 lists.
+- A tagged (1;plan) result passed to eExec fails "shape":
+  the executor takes unwrapped plan objects, not tagged
+  results. Similarly, a single-element plan arg list or
+  payload must be enlisted (,(...)): ((...)) is grouping,
+  not enlist, and makes oPlan fail "valid".
