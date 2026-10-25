@@ -383,3 +383,16 @@ and Kona hangs or misparses.
   one element: xGather with atom 99 fails the int-list type check
   with "type" before ever reaching the bounds check; ,99 is the
   list that exercises "bounds".
+- & and | do NOT short-circuit: both sides are evaluated. A
+  validator that combines a type check with a comparison on the
+  same value via & type-errors when the value has the wrong
+  type, instead of returning 0: (1=4:ver)&(~(ver<0)) with ver a
+  char atom evaluates "x"<0, and < between char and int is a
+  type error. Layer 9 proved this: the first t09 run dropped
+  into the prompt loop and flooded the output file (49MB of >
+  prompts) on tBegin with a non-int version. Always NEST:
+  type check as the outer :[...] condition, comparison only in
+  the true branch (tIsTxnV split into V/V1/V2 helpers;
+  tBeginV/tBeginW nested; tEntryOkV nested). The same hazard
+  applies to = between incompatible types; nest that too
+  rather than assuming = returns 0 across types.
