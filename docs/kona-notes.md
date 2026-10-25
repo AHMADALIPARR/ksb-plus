@@ -56,6 +56,41 @@ and Kona hangs or misparses.
   the code is wrong, but never hide a consistent failure behind
   reruns. Record flakiness honestly in the ledger.
 
+## Conditionals, evaluation order, and lists (found in Layer 1)
+
+- `:[...]` takes exactly three arguments. An assignment placed as
+  a branch (e.g. `:[c; t; x:...; value]`) does not mean "assign
+  then return value": it misparses and fails at runtime with a
+  type error. Compute intermediates at function top level, or move
+  the rest into a helper function called from the branch.
+- Evaluation is right-to-left, so arithmetic on the left of a
+  comparison binds wrong: `2*ar[1]<s` parses as `2*(ar[1]<s)`,
+  which is 0 or 2, and a conditional on 2 is a type error.
+  Parenthesize arithmetic in comparisons: `(2*ar[1])<s`.
+- Juxtaposition with a variable is application, not a list:
+  `IMX 1` where IMX holds an int parses as IMX applied to 1 and
+  fails with a rank error. Literal lists (`1 2 3`) are fine, but
+  a list containing a variable must use comma (`IMX,1`) or
+  semicolons (`(IMX;1)`).
+- Atoms are not lists. Drop from an atom never shrinks (`1 _ 5`
+  stays 5), so drop-based recursion on an atom recurses forever
+  to a stack error, and a stack error leaves later calls in the
+  session silently misbehaving. Guard list functions with a type
+  check (`(4:xs)>0` rejects atoms) before recursing or folding.
+- Over-folds with a tagged accumulator need enlist-then-concat:
+  `(1;0),xs` flattens the pair into elements, so the fold starts
+  from a bare int and fails; `(,(1;0)),xs` prepends the pair as
+  one element. Prefer over-folds or direct self-recursion with a
+  leaf helper; a mutual-helper recursion returning tagged pairs
+  once silently produced no output for non-empty lists, and its
+  mechanism was never isolated, so that shape is avoided.
+- A run with runtime errors tends to end in the `>` prompt flood
+  at EOF (megabytes of prompts, killed only by timeout). A clean
+  run exits promptly with no flood. The flood is a symptom of
+  errors, not a separate bug: fix the errors and it goes away.
+  Never let a flood file land in /tmp (512M tmpfs): redirect
+  Kona output to workspace disk and inspect with a length filter.
+
 ## Representation facts
 
 - Kona ints are signed 64-bit. There is no unsigned 64-bit atom, so
