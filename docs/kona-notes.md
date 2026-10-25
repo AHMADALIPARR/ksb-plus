@@ -91,6 +91,36 @@ and Kona hangs or misparses.
   Never let a flood file land in /tmp (512M tmpfs): redirect
   Kona output to workspace disk and inspect with a length filter.
 
+## Homogeneous collapse, 1-char strings, and `#` precedence
+
+- K collapses homogeneous pairs and triples: (1;5) is an int
+  list, (`sym;`ab) is a symbol list, (2;100;50) is an int list.
+  A pair is only a general pair when its elements differ in
+  type. Object kind codes are therefore symbols (a symbol kind
+  plus any payload is general, except a symbol payload, which is
+  handled by accepting a 2-symbol list whose first element is a
+  kind symbol as an object, with the ambiguity documented).
+  All-int payload pairs and triples are int lists and must be
+  accepted as such, not rejected as non-pairs.
+- A 1-character quoted literal is a char atom (type 3), not a
+  char list: 4:"x" is 3, 4:"xx" is -3. Enlist (, "x") for a
+  1-character string. String validators must require type -3,
+  and tests must not use 1-character literals as string payloads.
+- A monadic verb before a comparison verb takes the comparison
+  as its argument: #v<b parses as #(v<b), so ~(#v<b) is ~(#v),
+  not ~(length < b). Parenthesize every count before a
+  comparison: ~((#v)<b). The same right-to-left rule as
+  2*ar[1]<s. Counts after the comparison verb are safe:
+  i<#v is i < (#v).
+- Monadic ? (distinct) on an atom is a rank error. Guard with a
+  list check (type code <= 0) before calling ? on unvalidated
+  input. Each over an atom is safe (it applies once).
+- chk's ~ errors on shape mismatch instead of returning 0, so a
+  wrong-shape actual versus expected produces an interpreter
+  error on the chk line itself, not a FAIL line. A missing PASS
+  with a nearby type error means the shapes differed: fix the
+  expectation (or the code) so both sides have the same shape.
+
 ## Representation facts
 
 - Kona ints are signed 64-bit. There is no unsigned 64-bit atom, so
