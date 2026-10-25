@@ -315,3 +315,27 @@ and Kona hangs or misparses.
   cap Kona's output (pipe through head -c) so a flood cannot eat
   the disk; a clean run is a few KB and exits promptly, so the cap
   never truncates a passing run.
+- Type codes differ for atoms and vectors, and mixing them up fails
+  silently as a wrong branch, not a parse error: an int ATOM has
+  type 1, a float atom 2, a char atom 3, a symbol 4; the matching
+  VECTORS have types -1, -2, -3, -4. Layer 7's xKeyOk first compared
+  key atoms against -1/-2 (the vector codes), so every numeric
+  lookup failed with "type" while char/symbol keys (whose atom and
+  vector-code checks happened to be written correctly) passed.
+  xKeyNan made the same mistake (-2 for a float atom instead of
+  2). When a function takes a type code for a vector AND checks an
+  atom against it, convert explicitly: atom codes are positive.
+- Kona grade is STABLE (probed on int, float, symbol duplicates):
+  equal keys keep their original relative order, so a sorted index
+  built by grade has deterministic rowids for dup keys.
+- Kona list match treats identical NaN lists as equal (a~a is 1 for
+  a NaN-containing list), even though scalar NaN comparisons are
+  special. An earlier probe that seemed to show NaN breaking match
+  was actually comparing lists in different orders. Consequence:
+  xIsSortIdx accepts a NaN-containing sorted index; only the NaN
+  rows are unreachable by key, because lookup/insert/delete/range
+  reject NaN keys explicitly.
+- A rowid argument that must be a list must be enlisted when it has
+  one element: xGather with atom 99 fails the int-list type check
+  with "type" before ever reaching the bounds check; ,99 is the
+  list that exercises "bounds".
