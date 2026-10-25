@@ -460,3 +460,34 @@ and Kona hangs or misparses.
   not a list of pairs: lookup walks into the table object
   and returns "key". Env lists must enlist single pairs
   as (,(`t;tab)).
+- `#x<y` parses as `#(x<y)`, not `(#x)<y. Layer 13's
+  bounds guards written ~(#toks<(i+2)) did not compare a
+  count at all: Kona compared the token list against the
+  bound and counted the result, and ORDER BY parsing ran
+  away to "wsfull error". The safe forms are ((i+1)<#toks)
+  (count on the right, correct as written) and
+  ~((#toks)<(i+2)) (count parenthesized on the left).
+  The same parenthesize-counts rule already covered =;
+  it covers < too.
+- `=` between a symbol and an int is a type error, not 0.
+  Probed 2026-10-25: `count=0 prints "type error" and drops
+  the session into the prompt flood. A function returning
+  "symbol or 0" (Layer 13's zAggSym) must be tested by type
+  code, (4:a)=1 for the failure case, never by a=0. By
+  contrast, ~ across atom types is safe (`a~0 is 0).
+- Never index a value that might be an atom. Probed
+  2026-10-25: {[it] it[0]~`agg} applied by each to symbol
+  atoms ran away to wsfull instead of erroring. Guard
+  with a type check before indexing, and keep each over
+  tuples/lists, never over mixed atoms.
+- A test env with two pairs needs no enlist:
+  ((`t;tab);(`u;rt)) is already a list of two pairs.
+  But (,(`t;tab));(`u;rt) is NOT: it is a 2-list whose
+  first element is an enlisted pair, so lookup walks past
+  it and returns "key". Enlist only single pairs.
+- A join fails "key" when the two sides share a non-key
+  column name (Layer 10 duplicate check). A join test
+  fixture whose left table shares nm with the right table
+  fails for that reason, not for a parser reason; keep
+  join fixtures free of shared non-key names, and cover
+  the duplicate case separately (it passes with "key").
