@@ -2,8 +2,8 @@
 / src/l00.k, src/l01.k, src/l02.k, then this file to Kona.
 / Each chk prints PASS name or FAIL name. The last line prints
 / ALL PASS only when every check passed.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 uw:{[t] t[1]}
 nest:{[n] :[n=0; (oInt[1])[1]; (oList[(,nest[n-1])])[1]]}
 IMX:9223372036854775807
@@ -206,4 +206,4 @@ fs256:({[i] (`$"f",$i;`intvec;1)}'!256)
 chk["schema-256-valid"; oIsValid[uw[oSchema[fs256]]]; 1]
 fs257:({[i] (`$"f",$i;`intvec;1)}'!257)
 chk["schema-257"; oSchema[fs257]; (0;"limit")]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]

@@ -10,8 +10,8 @@
 / decoded objects), never by a whole-store match: Kona's 1: read
 / of nested structures is unreliable (see src/l05.k header), so
 / no test compares a loaded store to a saved store with ~.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 uw:{[t] t[1]}
 frI:uw[cEncode[uw[oInt[42]]]]
 frS:uw[cEncode[uw[oStr["hello"]]]]
@@ -111,4 +111,4 @@ chk["load-type"; sLoad["s5testG"]; (0;"type")]
 chk["save-badpath"; sSave[st3;5]; (0;"type")]
 chk["load-badpath"; sLoad[5]; (0;"type")]
 chk["save-nonstore"; sSave[5;"s5test"]; (0;"type")]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]

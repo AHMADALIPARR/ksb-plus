@@ -4,8 +4,8 @@
 / Each chk prints PASS name or FAIL name. The last line prints
 / ALL PASS only when every check passed; run-tests.sh also fails the
 / file if any FAIL line appears.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 chk["valid-bytes"; bValid[0 65 255]; 1]
 chk["valid-empty"; bValid[!0]; 1]
 chk["invalid-256"; bValid[0 256]; 0]
@@ -51,4 +51,4 @@ chk["utf8-truncated"; butf8ok[226 130]; 0]
 chk["utf8-badcont"; butf8ok[226 65 172]; 0]
 chk["utf8-lonecont"; butf8ok[,128]; 0]
 chk["utf8-too-high"; butf8ok[245 128 128 128]; 0]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]

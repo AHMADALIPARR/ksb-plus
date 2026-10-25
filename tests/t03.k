@@ -2,8 +2,8 @@
 / src/l00.k, src/l01.k, src/l02.k, src/l03.k, then this file to Kona.
 / Each chk prints PASS name or FAIL name. The last line prints
 / ALL PASS only when every check passed.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 uw:{[t] t[1]}
 rteq:{[x] r:cDecode[uw[cEncode[x]]]; :[r[0]=0; 0; r[1]~x]}
 nest:{[n] :[n=0; (oInt[1])[1]; (oList[(,nest[n-1])])[1]]}
@@ -102,4 +102,4 @@ chk["depth-33"; cDecode[bFrame[7;1 _ full33]]; (0;"depth")]
 chk["enc-depth"; cE[raw[33];0]; (0;"depth")]
 chk["determ-int"; uw[cEncode[uw[oInt[42]]]]; uw[cEncode[uw[oInt[42]]]]]
 chk["determ-dict"; uw[cEncode[uw[oDict[`a`b;((oInt[1])[1];(oInt[2])[1])]]]]; uw[cEncode[uw[oDict[`a`b;((oInt[1])[1];(oInt[2])[1])]]]]]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]

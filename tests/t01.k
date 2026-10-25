@@ -2,8 +2,8 @@
 / src/l00.k, src/l01.k, then this file to Kona.
 / Each chk prints PASS name or FAIL name. The last line prints
 / ALL PASS only when every check passed.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 IMX:9223372036854775807
 IMN:(-9223372036854775807)-1
 chk["add-basic"; kChkAdd[2;3]; (1;5)]
@@ -158,4 +158,4 @@ chk["hash-mix"; kHashMix[100]; 44067]
 chk["hash-mix-zero"; kHashMix[0]; 0]
 chk["bucket-basic"; kBucket[44067;10]; (1;7)]
 chk["bucket-range"; kBucket[5;0]; (0;"range")]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]

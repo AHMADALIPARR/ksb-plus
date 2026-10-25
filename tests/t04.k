@@ -2,8 +2,8 @@
 / src/l00.k, src/l01.k, src/l02.k, src/l03.k, src/l04.k, then this
 / file to Kona. Each chk prints PASS name or FAIL name. The last
 / line prints ALL PASS only when every check passed.
-F:0
-chk:{[n;g;w] :[g~w; 0; F:F+1]; (:[g~w; "PASS "; "FAIL "]),n}
+FC:(,0)
+chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}
 uw:{[t] t[1]}
 fixck:{[pg] u:bDecU32[4#(12 _ pg)]; rec:(u-20)#(20 _ pg); (16#pg),bEncU32[bCksum[(16#pg),rec]],(20 _ pg)}
 frI:uw[cEncode[uw[oInt[42]]]]
@@ -101,4 +101,4 @@ chk["corrupt-usedminus"; pParse[fixck[pgD]]; (0;"trailing")]
 pgR:pg1
 pgR[30]:bMod[pgR[30]+1;256]
 chk["corrupt-frameck"; pParse[fixck[pgR]]; (0;"checksum")]
-:[0=F; "ALL PASS"; "FAILURES"]
+:[0=FC[0]; "ALL PASS"; "FAILURES"]
