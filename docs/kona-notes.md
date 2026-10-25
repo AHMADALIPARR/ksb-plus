@@ -425,3 +425,38 @@ and Kona hangs or misparses.
   results. Similarly, a single-element plan arg list or
   payload must be enlisted (,(...)): ((...)) is grouping,
   not enlist, and makes oPlan fail "valid".
+- Backtick-star is NOT a plain symbol literal. Probed
+  2026-10-25: (4:`*)=4 is false inside a function, and the
+  same comparison at top level floods the session; 4:`*
+  prints as the odd form 4::`*. Never use `* as a sentinel
+  value. Layer 12 uses the plain symbol `allcols for the
+  all-columns case, tested by the type check (4:cols)=4
+  (a user column named allcols arrives as a list, never
+  the atom, so the type check cannot confuse them).
+- Subtraction chains group right-to-left like every other
+  mixed-operator chain: j-i-1 is j-(i-1), not (j-i)-1.
+  Layer 12's string scanner computed a 1-char content length
+  as 3 this way, and K's cyclic take turned 1#"a\"" into
+  the 3-char list a"a instead of erroring. The fix writes
+  the length as j-(i+1) (a single subtraction, no chain).
+  Cyclic take is silent: any take whose count comes from
+  arithmetic must be probed, because an off-by count
+  repeats input instead of failing.
+- An "unmatched error" line in Kona output is a PARSE error
+  (kc.c: bracket matcher returns -2), not a runtime failure.
+  The offending input line is discarded, so a test line
+  with a dangling ] silently never runs: Layer 12's first
+  suite run showed 55 PASS + 1 FAIL out of 64 chk lines,
+  with 8 lines discarded. The runner cannot catch this
+  (no FAIL line is printed for a discarded line), so test
+  files must be bracket-balanced per line — check with
+  awk/grep before trusting a green run, and reconcile the
+  PASS count against the chk count.
+- A chk line written chk["name"]; g; w (semicolon after the
+  name) closes the chk[ bracket early and leaves a dangling
+  ] at line end: same silent-discard failure as above.
+  The form is always chk["name"; g; w].
+- An env written ((`t;tab)) is the pair itself (grouping),
+  not a list of pairs: lookup walks into the table object
+  and returns "key". Env lists must enlist single pairs
+  as (,(`t;tab)).
