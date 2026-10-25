@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 fail=0
 for t in tests/t*.k; do
   n="$(basename "$t" .k)"
-  src="src/${n#t}.k"
+  src="src/l${n#t}.k"
   if [ -f "$src" ]; then
     out="$(cat "$src" "$t" | timeout 60 "$KONA" 2>&1)"
   else
