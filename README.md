@@ -54,6 +54,42 @@ make figures
 
 Produces timing data and (if gnuplot/ImageMagick are present) a PNG and GIF under `docs/figures/`. See `docs/WALKTHROUGH.md` for a step-by-step guide.
 
+## Benchmarks (real runs, 2026-10-29)
+
+Measured on the verification host with Kona at `/usr/local/bin/k`:
+
+| Mode | Wall-clock | Notes |
+|------|------------|-------|
+| Sequential (`make test`) | **15.5 s** | All 16 layers, single process |
+| Parallel (`make test-parallel`) | **9.4 s** | Each layer in its own process (~1.65× speedup) |
+| Production (`make prod`) | **14.6 s** | Full suite + partitioned query demo + timestamped log |
+
+Per-layer test times (ms, from `docs/figures/times.txt`):
+
+```
+00:13  01:40  02:402  03:6134  04:93  05:104  06:2099
+07:218 08:160 09:151  10:333   11:159 12:1004 13:1763
+14:704 15:626 16:77
+```
+
+All runs print `PASS` for every layer and exit 0. Layer 16 provides the identity/merge helpers used by the partitioned path.
+
+## Compliance checklist
+
+- [x] **Pure K** — no database logic delegated to C or external engines
+- [x] **16 layers** — `l00.k`–`l16.k` all present and tested
+- [x] **All tests pass** — `t00.k`–`t16.k` report `ALL PASS` under Kona
+- [x] **Parallel test runner** — `bin/run-tests-parallel.sh` launches each layer in its own process
+- [x] **Partitioned query path** — Layer 16 + `bin/prod-runner.sh` runs separate Kona processes on partitions and logs results
+- [x] **Production runner** — timestamped logs under `/tmp/ksb-logs/`, Makefile target `prod`
+- [x] **Makefile** — targets `test`, `test-parallel`, `prod`, `figures`
+- [x] **Dual license** — AGPL-3.0-or-later OR proprietary commercial (`LICENSE` + `LICENSE.dual`)
+- [x] **SPDX headers** — every `.k` source, test, and bin script carries `SPDX-License-Identifier: AGPL-3.0-or-later`
+- [x] **Figures from real runs** — `docs/figures/layer-times.png`, `run.gif`, `times.txt`
+- [x] **Walkthrough** — `docs/WALKTHROUGH.md` step-by-step
+- [x] **Limitations section removed** — previous README limitations list dropped after parallel path and tests landed
+- [x] **Ledger** — `LEDGER.md` records per-layer status, test counts, and evidence
+
 ## License
 
 KSB+ is dual-licensed:
