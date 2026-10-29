@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 15: security + ops on Layers 9 and 12. Prefix n.
 / All public functions return (1;value) or (0;reason).
 / WARNING (read before using): password hashes here are

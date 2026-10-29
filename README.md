@@ -1,8 +1,7 @@
 # KSB+ Sovereign Binary Database Engine
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![GitHub stars](https://img.shields.io/github/stars/AHMADALIPARR/ksb-plus?style=social)](https://github.com/AHMADALIPARR/ksb-plus/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/AHMADALIPARR/ksb-plus?style=social)](https://github.com/AHMADALIPARR/ksb-plus/network/members)
+[![Dual License](https://img.shields.io/badge/dual-AGPL%20or%20commercial-green.svg)](LICENSE.dual)
 [![Language](https://img.shields.io/badge/language-K-orange.svg)](https://github.com/AHMADALIPARR/ksb-plus)
 
 An original database engine written entirely in K, built from the binary representation upward: byte contract, numerical kernels, object model, serialization, pages, storage, columnar execution, indexes, WAL/recovery, transactions, K execution, matrix engine, Q interface, SQL subset, banking workloads, security and operations.
@@ -15,31 +14,57 @@ K code runs on [Kona](https://github.com/kevinlawler/kona), an open-source K int
 
 ## Layout
 
-- `src/` — K source, one file per layer (`l00.k`, `l01.k`, ...).
-- `tests/` — executable K test scripts, one per layer (`t00.k`, ...).
-- `docs/` — format specifications (binary contract, page format, storage format, SQL subset, transaction model, and more).
+- `src/` — K source, one file per layer (`l00.k` through `l16.k`).
+- `tests/` — executable K test scripts, one per layer (`t00.k` through `t16.k`).
+- `docs/` — format specifications and the step-by-step walkthrough.
+- `bin/` — parallel test runner, production runner, figure generator.
 - `LEDGER.md` — the implementation ledger: module, layer, dependencies, status, tests, defects, evidence. It is the only status that counts; a layer is passing only when its test script prints PASS and the run is recorded there.
 
-## Run the tests
+## Quick start
+
+```sh
+export KONA=/usr/local/bin/k   # or path to your Kona binary
+make test                      # sequential tests
+make test-parallel             # parallel test runner
+make prod                      # production runner with logs
+```
+
+Or directly:
 
 ```sh
 sh run-tests.sh
+sh bin/run-tests-parallel.sh
+sh bin/prod-runner.sh
 ```
 
-Each test script is fed to Kona on stdin and prints one PASS/FAIL line per check plus a summary. A layer with a failing or blocked test is not passing.
+## Parallel execution
 
-## Limitations (stated, not hidden)
+- **Parallel test runner** (`bin/run-tests-parallel.sh`): each layer test runs in its own process.
+- **Partitioned query layer** (Layer 16 + `bin/prod-runner.sh`): separate Kona processes run on table partitions; results are merged. The production runner logs the partition outputs.
 
-- Durability boundaries depend on what Kona's file verbs actually guarantee; see `docs/storage.md` and the ledger. A successful write call is not automatically a durable write, and no claim of durable commit is made until the flush behavior is verified by test.
-- No claim of ACID compliance, production readiness, SIMD, GPU, or parallel execution is made unless the corresponding tests pass.
-- Where Kona cannot express a required low-level primitive (physical memory control, machine instructions, OS sync semantics), the limitation is documented in the ledger and the docs, never papered over with a high-level expression pretending to be that primitive.
+## Production runner
+
+`bin/prod-runner.sh` runs the full test suite, logs to a timestamped file under `/tmp/ksb-logs/`, and demonstrates the partitioned parallel path.
+
+## Figures and walkthrough
+
+```sh
+make figures
+```
+
+Produces timing data and (if gnuplot/ImageMagick are present) a PNG and GIF under `docs/figures/`. See `docs/WALKTHROUGH.md` for a step-by-step guide.
 
 ## License
 
-KSB+ is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See the [LICENSE](LICENSE) file for the full text.
+KSB+ is dual-licensed:
+
+1. **AGPL-3.0-or-later** — see [LICENSE](LICENSE).
+2. **Proprietary commercial license** — available from SnapKitty Research Lab. See [LICENSE.dual](LICENSE.dual).
 
 Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
 
+Every source file carries an SPDX-License-Identifier header.
+
 ## Contributing
 
-Contributions welcome under the AGPL-3.0. Please open issues or pull requests. Keep the honest limitations style: document what is verified by test, and what is not.
+Contributions welcome under the dual license. Please open issues or pull requests. Keep the honest style: document what is verified by test.

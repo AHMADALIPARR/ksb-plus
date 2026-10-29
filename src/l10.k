@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 10: K execution. Executes Layer 2 plan objects against
 / columnar stores (Layer 6) and in-memory tables. A plan pipeline
 / is a general list of plan objects, executed left to right; each

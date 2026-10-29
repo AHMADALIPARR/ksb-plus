@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 11: matrix engine. Row-major intmat/fltmat objects (Layer 2),
 / data layout (rows;cols;data) with data length rows*cols.
 / Int arithmetic is checked (overflow fails, never wraps); float is

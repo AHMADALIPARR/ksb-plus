@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 8: WAL/recovery. A WAL (write-ahead log) is the redo log
 / for a Layer 5 store: a sequence of entries, each a Layer 0
 / frame, so a store lost to a crash can be rebuilt by replaying

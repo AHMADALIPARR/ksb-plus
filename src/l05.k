@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 5: storage manager. A store is a list of pages (Layer 4
 / byte lists), indexed by page id: page id is the index into the
 / list, so sCreate appends an empty page and its id is the old

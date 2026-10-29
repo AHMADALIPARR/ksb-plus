@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 2 tests. Run via run-tests.sh, which feeds the layer chain
 / src/l00.k, src/l01.k, src/l02.k, then this file to Kona.
 / Each chk prints PASS name or FAIL name. The last line prints

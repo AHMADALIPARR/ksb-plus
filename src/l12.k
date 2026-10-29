@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 12: Q interface. Query text -> Layer 10 plan pipelines -> eExec.
 / Grammar. Keywords are lowercase and case-sensitive; identifiers are
 / case-sensitive. A query is one of:

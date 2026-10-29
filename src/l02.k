@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 2: object model. Every object is a general pair (kind;payload)
 / with a symbol kind code from the registry below. Constructors
 / validate their inputs and return (1;object) on success or

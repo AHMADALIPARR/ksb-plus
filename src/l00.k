@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / KSB+ Sovereign Binary Database Engine
 / Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
 /

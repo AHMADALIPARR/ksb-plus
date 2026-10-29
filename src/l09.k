@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 9: transactions/concurrency. A transaction is a value
 / (id;status;snapVer;work;entries): id is an int >= 0, status is
 / 0 open, 1 committed, 2 aborted, snapVer is the store version

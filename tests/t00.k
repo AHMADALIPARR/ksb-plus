@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 0 tests. Run via run-tests.sh, which feeds src/l00.k then
 / this file to Kona (Kona's \l is unreliable here, so the runner
 / concatenates instead of loading).

@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 6: columnar engine. A table is stored column by column,
 / not row by row: each column is split into row groups, each group
 / is encoded as a one-column table frame (Layer 3), and the frames

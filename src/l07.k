@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 7: indexes on top of the Layer 6 columnar engine.
 / A sorted index is (keys;rowids): keys a typed vector, rowids an
 / int list of the same length, keys in grade order. Lookups and

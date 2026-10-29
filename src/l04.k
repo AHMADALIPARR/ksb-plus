@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 4: pages. A page is the fixed-size unit of storage: exactly
 / 4096 bytes, holding a sequence of Layer 3 frames (records).
 / Layout (all integers big-endian, as in Layers 0-3):

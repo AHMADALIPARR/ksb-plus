@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 14: banking + time-series workloads on Layers 9 and 12.
 / Prefix y. All public functions return (1;value) or (0;reason).
 / Tables are Layer 2 table objects (oTable results unwrapped with [1]).

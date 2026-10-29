@@ -1,3 +1,6 @@
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 3: canonical value format. A value encodes as one Layer 0
 / frame: bFrame[tag;payload], where tag is the kind registry byte
 / (1..16 for the Layer 2 kinds, 17 for null) and payload is the
