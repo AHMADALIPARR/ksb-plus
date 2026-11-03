@@ -1,5 +1,6 @@
-/ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
-/ Copyright Ahmad Ali Parr
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 18 tests: size-aware chunks and direct page reads.
 FC:(,0)
 chk:{[n;g;w] m:g~w; FC[0]:FC[0]+(~m); (:[m; "PASS "; "FAIL "]),n}

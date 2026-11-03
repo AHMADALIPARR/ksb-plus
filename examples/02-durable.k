@@ -1,5 +1,6 @@
-/ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
-/ Copyright Ahmad Ali Parr
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Durable database directory: transactions, WAL, commit, crash.
 / Run: scripts/ksb.sh examples/show.k examples/02-durable.k
 / then: ls demo.db; scripts/ksb.sh examples/show.k examples/03-recover.k

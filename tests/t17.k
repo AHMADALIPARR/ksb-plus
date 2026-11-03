@@ -1,5 +1,6 @@
-/ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SnapKitty-Opaque-1.0
-/ Copyright Ahmad Ali Parr
+/ SPDX-License-Identifier: AGPL-3.0-or-later
+/ Copyright (C) 2026 Ahmad Ali Parr / SnapKitty Research Lab
+/ Dual-licensed under AGPL-3.0-or-later and a proprietary commercial license.
 / Layer 17 tests: durable commit, atomic file replace, recovery.
 / Each "restart" below drops the in-memory handle and rebuilds it
 / from the files only (dRecover). tests/t17.sh does the same with
