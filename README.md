@@ -14,10 +14,12 @@ K code runs on [Kona](https://github.com/kevinlawler/kona), an open-source K int
 
 ## Layout
 
-- `src/` — K source, one file per layer (`l00.k` through `l16.k`).
-- `tests/` — executable K test scripts, one per layer (`t00.k` through `t16.k`).
+- `src/` — K source, one file per layer (`l00.k` through `l18.k`).
+- `tests/` — executable K test scripts, one per layer (`t00.k` through `t18.k`), plus `t17.sh` (kill -9 crash test).
 - `docs/` — format specifications and the step-by-step walkthrough.
 - `bin/` — parallel test runner, production runner, figure generator.
+- `examples/` — short runnable examples (tables and queries, a durable database, crash recovery).
+- `scripts/` — `ksb.sh` loads every layer into Kona and runs a K file.
 - `LEDGER.md` — the implementation ledger: module, layer, dependencies, status, tests, defects, evidence. It is the only status that counts; a layer is passing only when its test script prints PASS and the run is recorded there.
 
 ## Quick start
@@ -45,6 +47,23 @@ sh bin/prod-runner.sh
 ## Production runner
 
 `bin/prod-runner.sh` runs the full test suite, logs to a timestamped file under `/tmp/ksb-logs/`, and demonstrates the partitioned parallel path.
+
+## Layers 17 and 18
+
+- **Layer 17, durable database files** (`src/l17.k`): a database is a directory with a store, a write-ahead log and a generation pointer. A commit is durable once its commit entry is in the log. Reopening the directory recovers every committed transaction and drops uncommitted ones. `tests/t17.sh` kills a writer with `kill -9` and checks the recovery.
+- **Layer 18, size-aware chunks** (`src/l18.k`): columns are cut into chunks by encoded size, so short values share a page. A single column can be read from a saved store file without loading the rest.
+
+```sh
+sh tests/t17.sh                # Layer 17 crash test (not part of run-tests.sh)
+```
+
+## Examples
+
+```sh
+sh scripts/ksb.sh examples/show.k examples/01-tables.k    # table, pages, Q and SQL
+sh scripts/ksb.sh examples/show.k examples/02-durable.k   # commit, checkpoint, crash
+sh scripts/ksb.sh examples/show.k examples/03-recover.k   # reopen and recover
+```
 
 ## Figures and walkthrough
 
